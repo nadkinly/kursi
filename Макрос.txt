@@ -1,0 +1,106 @@
+Sub ExampleOne()
+    Dim Sh As Worksheet
+    Dim Wb As Workbook
+    Dim WbO As Workbook
+    Dim Folder As String
+    Dim FileName As String
+    Dim i As Long
+    Dim Name As String
+    Dim Data As String
+    Dim Dat As Date
+    Dim FileOld As String
+'
+ 'Установка текушим листом титульный
+    Set Wb = ThisWorkbook
+    Set Sh = Wb.Worksheets.Item("Титульный")
+   'Текущая Папка
+    Folder = ThisWorkbook.Path
+    'Фирма на листе Sh в ячейке с кординатами 1 строка 2 столбец
+    Name = Sh.Cells(1, 2)
+      'Последовательная замена За на 01 , на пробел года на пустое место
+    Data = Replace(Replace(Replace(Sh.Cells(5, 2), "За", "01"), ",", " "), "года", "")
+   
+    'конвертирование строки в дату
+    Dat = CDate(Data)
+   
+'
+  'выборка файлов из деректории c расширением начинающимся на xl 2 вопроса означают сто могут быть любые 2 символа
+    FileName = Dir(Folder & "*.xl??")
+    'организация цикла до тех пор пока файлы не кончатся или FileOld будет не пустой
+    
+    Do While (FileName <> "") Or (FileOld <> "")
+    'открытие книги и помещение ее в переменную wb
+        Set WbO = Workbooks.Open(Folder & FileName, False, True)
+        'помещение в переменную ShF титульного листа
+         Set ShF = WbO.Worksheets.Item("Титульный")
+        'Фирма на листе ShF в ячейке с кординатами 1 строка 2 столбец
+        NameF = ShF.Cells(1, 2)
+
+        DataF = Replace(Replace(Replace(ShF.Cells(5, 2), "За", "01"), ",", " "), "года", "")
+        DatF = CDate(Data)
+        'проверка чтобы фирма у открытой книги совпадала сфирмой у листаемого файла и чтобы дата мыла на месяц больше
+        If (Name = NameF) And (DateAdd("m", 1, DatF) = Dat) Then
+        FileOld = Folder & FileName
+
+        End If
+
+
+          WbO.Close
+'
+       FileName = Dir
+   Loop
+       
+    'если прошломесячный файл нашли
+    If (FileOld <> "") Then
+    FileOld = Folder & FileOld
+    Else
+   'по умолчанию к выбору доступны файлы Excel(xls,xlsx,xlsm,xlsb)
+    avFiles = Application.GetOpenFilename("Excel files(*.xls*),*.xls*", 1, "Выбрать Excel файлы", , False)
+    If VarType(avFiles) = vbBoolean Then
+        'была нажата кнопка отмены - выход из процедуры
+        Exit Sub
+    End If
+    'avFiles - примет тип String
+    MsgBox "Выбран файл: '" & avFiles
+    FileOld = avFiles
+ 
+    End If
+    
+    'открываем его книгу
+       Set WbO = Workbooks.Open(FileOld, False, True)
+       MsgBox "Выбран файл: '" & FileOld
+       'перебираем строки от 5 до 10 c листа "Раздел 1 и 2"
+        For k = 5 To 8
+       'устанавливаем в текущию книгу в 4 колонку значения из 3 колонки прошломесячной книги
+       Wb.Worksheets.Item("Раздел 1 и 2").Cells(k, 4).Value = WbO.Sheets.Item("Раздел 1 и 2").Cells(k, 3)
+        Next
+
+        For k = 20 To 24
+            Wb.Worksheets.Item("Раздел 1 и 2").Cells(k, 4).Value = WbO.Sheets.Item("Раздел 1 и 2").Cells(k, 3)
+            Wb.Worksheets.Item("Раздел 1 и 2").Cells(k, 7).Value = WbO.Sheets.Item("Раздел 1 и 2").Cells(k, 6)
+            Wb.Worksheets.Item("Раздел 1 и 2").Cells(k, 10).Value = WbO.Sheets.Item("Раздел 1 и 2").Cells(k, 9)
+        Next
+'        'из листа "Раздел3"
+        With WbO.Sheets.Item("Раздел 3")
+        'определяем номер последней заполненной строки
+        r = .UsedRange.Rows.Count - 1
+        'определяем номер последнего заполненного столбца
+
+          c = .UsedRange.Columns.Count - 1
+    End With
+
+ 'копирование данных листа
+' WbO.Sheets.Item("Раздел 3").Range("A1:" & Cells(r, c).Address).Copy
+' Wb.Sheets.Item("Раздел 3").[A1].PasteSpecial Paste:=xlPasteValues
+
+k = 8
+ Do While (k < 20)
+    Wb.Worksheets.Item("Раздел 3").Cells(k, 7).Value = WbO.Sheets.Item("Раздел 3").Cells(k, 4)
+    Wb.Worksheets.Item("Раздел 3").Cells(k, 8).Value = WbO.Sheets.Item("Раздел 3").Cells(k, 5)
+    Wb.Worksheets.Item("Раздел 3").Cells(k, 9).Value = WbO.Sheets.Item("Раздел 3").Cells(k, 6)
+    k = k + 1
+   Loop
+WbO.Close
+    
+  
+End Sub
